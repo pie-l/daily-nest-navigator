@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Plus, Sparkles, Clock, Users, ChefHat } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,11 +12,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
 const MealPlanner = () => {
   const [selectedWeek, setSelectedWeek] = useState("current");
   const [showAddMeal, setShowAddMeal] = useState(false);
+  const [showMealDialog, setShowMealDialog] = useState(false);
+  const [selectedSuggestion, setSelectedSuggestion] = useState(null);
+  const [selectedDay, setSelectedDay] = useState("");
+  const [selectedMealType, setSelectedMealType] = useState("");
   const [newMeal, setNewMeal] = useState({
     type: "",
     day: "",
@@ -94,23 +104,37 @@ const MealPlanner = () => {
     });
   };
 
-  const addSuggestedMeal = (suggestion) => {
-    const availableDays = Object.keys(weeklyMeals);
-    const randomDay = availableDays[Math.floor(Math.random() * availableDays.length)];
-    
+  const handleSuggestedMealClick = (suggestion) => {
+    setSelectedSuggestion(suggestion);
+    setSelectedDay("");
+    setSelectedMealType("");
+    setShowMealDialog(true);
+  };
+
+  const confirmAddSuggestedMeal = () => {
+    if (!selectedDay || !selectedMealType || !selectedSuggestion) {
+      toast({
+        title: "Missing Information",
+        description: "Please select both day and meal type.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const updatedWeeklyMeals = { ...weeklyMeals };
-    updatedWeeklyMeals[randomDay][suggestion.type] = {
-      dish: suggestion.dish,
-      cuisine: suggestion.cuisine,
-      time: suggestion.time,
-      servings: suggestion.servings
+    updatedWeeklyMeals[selectedDay][selectedMealType] = {
+      dish: selectedSuggestion.dish,
+      cuisine: selectedSuggestion.cuisine,
+      time: selectedSuggestion.time,
+      servings: selectedSuggestion.servings
     };
     
     setWeeklyMeals(updatedWeeklyMeals);
+    setShowMealDialog(false);
     
     toast({
       title: "Meal Added!",
-      description: `${suggestion.dish} added to ${randomDay} ${suggestion.type}.`,
+      description: `${selectedSuggestion.dish} added to ${selectedDay} ${selectedMealType}.`,
     });
   };
 
@@ -181,14 +205,6 @@ const MealPlanner = () => {
             <Plus className="h-4 w-4 mr-2" />
             Add Meal
           </Button>
-          <Button 
-            variant="outline" 
-            className="border-purple-200 text-purple-700 hover:bg-purple-50"
-            onClick={generateAISuggestions}
-          >
-            <Sparkles className="h-4 w-4 mr-2" />
-            AI Suggestions
-          </Button>
         </div>
       </div>
 
@@ -236,7 +252,7 @@ const MealPlanner = () => {
                     <Button 
                       size="sm" 
                       variant="outline"
-                      onClick={() => addSuggestedMeal(suggestion)}
+                      onClick={() => handleSuggestedMealClick(suggestion)}
                       className="ml-2 border-purple-200 text-purple-700 hover:bg-purple-50"
                     >
                       Add
@@ -256,6 +272,51 @@ const MealPlanner = () => {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Meal Selection Dialog */}
+      <Dialog open={showMealDialog} onOpenChange={setShowMealDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add {selectedSuggestion?.dish}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Day</label>
+              <Select value={selectedDay} onValueChange={setSelectedDay}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a day" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.keys(weeklyMeals).map((day) => (
+                    <SelectItem key={day} value={day}>{day}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Meal Time</label>
+              <Select value={selectedMealType} onValueChange={setSelectedMealType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose meal time" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="breakfast">Breakfast</SelectItem>
+                  <SelectItem value="lunch">Lunch</SelectItem>
+                  <SelectItem value="dinner">Dinner</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowMealDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={confirmAddSuggestedMeal}>
+              Add Meal
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Meal Form */}
       {showAddMeal && (
