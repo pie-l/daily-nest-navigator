@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Plus, Check, Trash2, ShoppingCart, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -92,20 +91,6 @@ const ShoppingList = () => {
           <p className="text-gray-600">
             {pendingItems.length} items remaining • {completedItems.length} completed
           </p>
-        </div>
-        <div className="flex gap-3">
-          <Button 
-            onClick={generateFromMeals}
-            variant="outline" 
-            className="border-purple-200 text-purple-700 hover:bg-purple-50"
-          >
-            <Sparkles className="h-4 w-4 mr-2" />
-            From Meals
-          </Button>
-          <Button className="bg-green-500 hover:bg-green-600">
-            <ShoppingCart className="h-4 w-4 mr-2" />
-            Start Shopping
-          </Button>
         </div>
       </div>
 

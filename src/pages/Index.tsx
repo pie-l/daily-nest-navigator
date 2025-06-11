@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { Calendar, ChefHat, ShoppingCart, Users, Car, Settings, Plus, Clock, CheckCircle } from "lucide-react";
+import { Calendar, ChefHat, ShoppingCart, Users, Car, Settings as SettingsIcon, Plus, Clock, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +7,7 @@ import MealPlanner from "@/components/MealPlanner";
 import ShoppingList from "@/components/ShoppingList";
 import ActivityCalendar from "@/components/ActivityCalendar";
 import RoleSelector from "@/components/RoleSelector";
+import Settings from "@/components/Settings";
 
 const Index = () => {
   const [currentRole, setCurrentRole] = useState("parent");
@@ -194,8 +194,12 @@ const Index = () => {
             </div>
             <div className="flex items-center gap-4">
               <RoleSelector currentRole={currentRole} onRoleChange={setCurrentRole} />
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4" />
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setActiveView("settings")}
+              >
+                <SettingsIcon className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -211,6 +215,7 @@ const Index = () => {
               { id: "meals", label: "Meal Planning", icon: ChefHat },
               { id: "shopping", label: "Shopping", icon: ShoppingCart },
               { id: "calendar", label: "Calendar", icon: Calendar },
+              { id: "settings", label: "Settings", icon: SettingsIcon },
             ].map((item) => (
               <button
                 key={item.id}
@@ -235,6 +240,7 @@ const Index = () => {
         {activeView === "meals" && <MealPlanner />}
         {activeView === "shopping" && <ShoppingList />}
         {activeView === "calendar" && <ActivityCalendar />}
+        {activeView === "settings" && <Settings currentRole={currentRole} onClose={() => setActiveView("dashboard")} />}
       </main>
     </div>
   );

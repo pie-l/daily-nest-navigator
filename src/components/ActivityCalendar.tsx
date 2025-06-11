@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Plus, Calendar, Clock, MapPin, User, Car } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import {
   Select,
   SelectContent,
@@ -17,10 +17,23 @@ import {
 const ActivityCalendar = () => {
   const [showAddActivity, setShowAddActivity] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState("current");
+  const [viewMode, setViewMode] = useState("week");
+  const [newActivity, setNewActivity] = useState({
+    title: "",
+    type: "",
+    day: "",
+    startTime: "",
+    endTime: "",
+    location: "",
+    assignedTo: "",
+    driver: "",
+    notes: ""
+  });
+  const { toast } = useToast();
 
   const weekDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
   
-  const activities = {
+  const [activities, setActivities] = useState({
     Monday: [
       {
         id: 1,
@@ -115,7 +128,7 @@ const ActivityCalendar = () => {
         color: "bg-orange-100 text-orange-800 border-orange-200"
       }
     ]
-  };
+  });
 
   const getActivityTypeIcon = (type: string) => {
     const icons = {
@@ -127,6 +140,74 @@ const ActivityCalendar = () => {
       academic: "📚"
     };
     return icons[type] || "📅";
+  };
+
+  const getActivityColor = (type: string) => {
+    const colors = {
+      music: "bg-purple-100 text-purple-800 border-purple-200",
+      sports: "bg-green-100 text-green-800 border-green-200",
+      creative: "bg-pink-100 text-pink-800 border-pink-200",
+      social: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      family: "bg-orange-100 text-orange-800 border-orange-200",
+      academic: "bg-blue-100 text-blue-800 border-blue-200"
+    };
+    return colors[type] || "bg-gray-100 text-gray-800 border-gray-200";
+  };
+
+  const handleSaveActivity = () => {
+    if (!newActivity.title || !newActivity.day || !newActivity.startTime || !newActivity.endTime) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newId = Math.max(...Object.values(activities).flat().map(a => a.id)) + 1;
+    const activityToAdd = {
+      id: newId,
+      title: newActivity.title,
+      time: `${newActivity.startTime} - ${newActivity.endTime}`,
+      location: newActivity.location,
+      type: newActivity.type,
+      assignedTo: newActivity.assignedTo,
+      driver: newActivity.driver,
+      color: getActivityColor(newActivity.type)
+    };
+
+    const dayKey = newActivity.day.charAt(0).toUpperCase() + newActivity.day.slice(1);
+    setActivities(prev => ({
+      ...prev,
+      [dayKey]: [...(prev[dayKey] || []), activityToAdd]
+    }));
+
+    toast({
+      title: "Activity Added",
+      description: `${newActivity.title} has been added to ${dayKey}`,
+    });
+
+    // Reset form
+    setNewActivity({
+      title: "",
+      type: "",
+      day: "",
+      startTime: "",
+      endTime: "",
+      location: "",
+      assignedTo: "",
+      driver: "",
+      notes: ""
+    });
+    setShowAddActivity(false);
+  };
+
+  const handleViewMonth = () => {
+    setViewMode(viewMode === "week" ? "month" : "week");
+    toast({
+      title: "View Changed",
+      description: `Switched to ${viewMode === "week" ? "month" : "week"} view`,
+    });
   };
 
   return (
@@ -145,9 +226,9 @@ const ActivityCalendar = () => {
             <Plus className="h-4 w-4 mr-2" />
             Add Activity
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleViewMonth}>
             <Calendar className="h-4 w-4 mr-2" />
-            View Month
+            View {viewMode === "week" ? "Month" : "Week"}
           </Button>
         </div>
       </div>
@@ -190,11 +271,15 @@ const ActivityCalendar = () => {
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Activity Name</label>
-                <Input placeholder="Enter activity name" />
+                <Input 
+                  placeholder="Enter activity name" 
+                  value={newActivity.title}
+                  onChange={(e) => setNewActivity(prev => ({ ...prev, title: e.target.value }))}
+                />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Type</label>
-                <Select>
+                <Select value={newActivity.type} onValueChange={(value) => setNewActivity(prev => ({ ...prev, type: value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select activity type" />
                   </SelectTrigger>
@@ -212,7 +297,7 @@ const ActivityCalendar = () => {
             <div className="grid md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Day</label>
-                <Select>
+                <Select value={newActivity.day} onValueChange={(value) => setNewActivity(prev => ({ ...prev, day: value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select day" />
                   </SelectTrigger>
@@ -225,21 +310,33 @@ const ActivityCalendar = () => {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Start Time</label>
-                <Input type="time" />
+                <Input 
+                  type="time" 
+                  value={newActivity.startTime}
+                  onChange={(e) => setNewActivity(prev => ({ ...prev, startTime: e.target.value }))}
+                />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">End Time</label>
-                <Input type="time" />
+                <Input 
+                  type="time" 
+                  value={newActivity.endTime}
+                  onChange={(e) => setNewActivity(prev => ({ ...prev, endTime: e.target.value }))}
+                />
               </div>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Location</label>
-              <Input placeholder="Enter location" />
+              <Input 
+                placeholder="Enter location" 
+                value={newActivity.location}
+                onChange={(e) => setNewActivity(prev => ({ ...prev, location: e.target.value }))}
+              />
             </div>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Assigned To</label>
-                <Select>
+                <Select value={newActivity.assignedTo} onValueChange={(value) => setNewActivity(prev => ({ ...prev, assignedTo: value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select family member" />
                   </SelectTrigger>
@@ -252,7 +349,7 @@ const ActivityCalendar = () => {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Driver</label>
-                <Select>
+                <Select value={newActivity.driver} onValueChange={(value) => setNewActivity(prev => ({ ...prev, driver: value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select driver" />
                   </SelectTrigger>
@@ -267,10 +364,14 @@ const ActivityCalendar = () => {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Notes</label>
-              <Textarea placeholder="Add any special instructions or notes..." />
+              <Textarea 
+                placeholder="Add any special instructions or notes..." 
+                value={newActivity.notes}
+                onChange={(e) => setNewActivity(prev => ({ ...prev, notes: e.target.value }))}
+              />
             </div>
             <div className="flex gap-2">
-              <Button className="bg-blue-600 hover:bg-blue-700">Save Activity</Button>
+              <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleSaveActivity}>Save Activity</Button>
               <Button variant="outline" onClick={() => setShowAddActivity(false)}>Cancel</Button>
             </div>
           </CardContent>
