@@ -13,14 +13,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 
 const MealPlanner = () => {
   const [selectedWeek, setSelectedWeek] = useState("current");
   const [showAddMeal, setShowAddMeal] = useState(false);
+  const [newMeal, setNewMeal] = useState({
+    type: "",
+    day: "",
+    dish: "",
+    notes: "",
+    cuisine: "American",
+    time: "30 mins",
+    servings: 3
+  });
+  const { toast } = useToast();
 
   const cuisinePreferences = ["Italian", "Mexican", "Asian", "Mediterranean", "American", "Indian"];
   
-  const weeklyMeals = {
+  const [weeklyMeals, setWeeklyMeals] = useState({
     Monday: {
       breakfast: { dish: "Overnight Oats", cuisine: "American", time: "15 mins", servings: 3 },
       lunch: { dish: "Caesar Salad", cuisine: "Italian", time: "20 mins", servings: 3 },
@@ -56,6 +67,89 @@ const MealPlanner = () => {
       lunch: { dish: "Leftover Magic", cuisine: "Mixed", time: "15 mins", servings: 3 },
       dinner: { dish: "Meal Prep Sunday", cuisine: "Mixed", time: "90 mins", servings: 6 }
     }
+  });
+
+  const [aiSuggestions, setAiSuggestions] = useState([
+    { dish: "Teriyaki Salmon Bowl", cuisine: "Asian", time: "25 mins", servings: 3, type: "dinner" },
+    { dish: "Mediterranean Wrap", cuisine: "Mediterranean", time: "15 mins", servings: 3, type: "lunch" },
+    { dish: "Veggie Omelet", cuisine: "American", time: "12 mins", servings: 3, type: "breakfast" }
+  ]);
+
+  const generateAISuggestions = () => {
+    const suggestions = [
+      { dish: "Moroccan Chicken Tagine", cuisine: "Mediterranean", time: "45 mins", servings: 3, type: "dinner" },
+      { dish: "Korean Bibimbap", cuisine: "Asian", time: "35 mins", servings: 3, type: "lunch" },
+      { dish: "Shakshuka", cuisine: "Mediterranean", time: "20 mins", servings: 3, type: "breakfast" },
+      { dish: "Thai Green Curry", cuisine: "Asian", time: "30 mins", servings: 3, type: "dinner" },
+      { dish: "Caprese Stuffed Chicken", cuisine: "Italian", time: "40 mins", servings: 3, type: "dinner" },
+      { dish: "Mexican Breakfast Bowl", cuisine: "Mexican", time: "18 mins", servings: 3, type: "breakfast" }
+    ];
+    
+    const randomSuggestions = suggestions.sort(() => 0.5 - Math.random()).slice(0, 3);
+    setAiSuggestions(randomSuggestions);
+    
+    toast({
+      title: "AI Suggestions Generated!",
+      description: "Fresh meal suggestions based on your family preferences.",
+    });
+  };
+
+  const addSuggestedMeal = (suggestion) => {
+    const availableDays = Object.keys(weeklyMeals);
+    const randomDay = availableDays[Math.floor(Math.random() * availableDays.length)];
+    
+    const updatedWeeklyMeals = { ...weeklyMeals };
+    updatedWeeklyMeals[randomDay][suggestion.type] = {
+      dish: suggestion.dish,
+      cuisine: suggestion.cuisine,
+      time: suggestion.time,
+      servings: suggestion.servings
+    };
+    
+    setWeeklyMeals(updatedWeeklyMeals);
+    
+    toast({
+      title: "Meal Added!",
+      description: `${suggestion.dish} added to ${randomDay} ${suggestion.type}.`,
+    });
+  };
+
+  const saveMeal = () => {
+    if (!newMeal.type || !newMeal.day || !newMeal.dish) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in meal type, day, and dish name.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const updatedWeeklyMeals = { ...weeklyMeals };
+    const dayName = newMeal.day.charAt(0).toUpperCase() + newMeal.day.slice(1);
+    
+    updatedWeeklyMeals[dayName][newMeal.type] = {
+      dish: newMeal.dish,
+      cuisine: newMeal.cuisine,
+      time: newMeal.time,
+      servings: newMeal.servings
+    };
+    
+    setWeeklyMeals(updatedWeeklyMeals);
+    setNewMeal({
+      type: "",
+      day: "",
+      dish: "",
+      notes: "",
+      cuisine: "American",
+      time: "30 mins",
+      servings: 3
+    });
+    setShowAddMeal(false);
+    
+    toast({
+      title: "Meal Saved!",
+      description: `${newMeal.dish} has been added to your meal plan.`,
+    });
   };
 
   const getCuisineColor = (cuisine: string) => {
@@ -87,7 +181,11 @@ const MealPlanner = () => {
             <Plus className="h-4 w-4 mr-2" />
             Add Meal
           </Button>
-          <Button variant="outline" className="border-purple-200 text-purple-700 hover:bg-purple-50">
+          <Button 
+            variant="outline" 
+            className="border-purple-200 text-purple-700 hover:bg-purple-50"
+            onClick={generateAISuggestions}
+          >
             <Sparkles className="h-4 w-4 mr-2" />
             AI Suggestions
           </Button>
@@ -103,7 +201,7 @@ const MealPlanner = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid md:grid-cols-2 gap-4 mb-4">
             <div>
               <h4 className="font-medium mb-2">Family Preferences</h4>
               <div className="flex flex-wrap gap-2">
@@ -115,14 +213,47 @@ const MealPlanner = () => {
               </div>
             </div>
             <div>
-              <h4 className="font-medium mb-2">Quick Suggestions</h4>
-              <div className="text-sm text-gray-600 space-y-1">
-                <div>• 30-min Asian stir-fry with vegetables</div>
-                <div>• Mediterranean grilled chicken salad</div>
-                <div>• Kid-friendly Mexican quesadilla night</div>
+              <h4 className="font-medium mb-2">Smart Suggestions</h4>
+              <div className="space-y-3">
+                {aiSuggestions.map((suggestion, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border border-purple-100">
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{suggestion.dish}</div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge className={getCuisineColor(suggestion.cuisine)} variant="secondary">
+                          {suggestion.cuisine}
+                        </Badge>
+                        <span className="text-xs text-gray-500 flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {suggestion.time}
+                        </span>
+                        <span className="text-xs text-gray-500 flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          {suggestion.servings}
+                        </span>
+                      </div>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => addSuggestedMeal(suggestion)}
+                      className="ml-2 border-purple-200 text-purple-700 hover:bg-purple-50"
+                    >
+                      Add
+                    </Button>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
+          <Button 
+            onClick={generateAISuggestions}
+            variant="outline" 
+            className="w-full border-purple-200 text-purple-700 hover:bg-purple-50"
+          >
+            <Sparkles className="h-4 w-4 mr-2" />
+            Generate New Suggestions
+          </Button>
         </CardContent>
       </Card>
 
@@ -136,7 +267,7 @@ const MealPlanner = () => {
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Meal Type</label>
-                <Select>
+                <Select value={newMeal.type} onValueChange={(value) => setNewMeal({...newMeal, type: value})}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select meal type" />
                   </SelectTrigger>
@@ -150,7 +281,7 @@ const MealPlanner = () => {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Day</label>
-                <Select>
+                <Select value={newMeal.day} onValueChange={(value) => setNewMeal({...newMeal, day: value})}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select day" />
                   </SelectTrigger>
@@ -164,14 +295,22 @@ const MealPlanner = () => {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Dish Name</label>
-              <Input placeholder="Enter dish name" />
+              <Input 
+                placeholder="Enter dish name" 
+                value={newMeal.dish}
+                onChange={(e) => setNewMeal({...newMeal, dish: e.target.value})}
+              />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Notes</label>
-              <Textarea placeholder="Add any special instructions or ingredients..." />
+              <Textarea 
+                placeholder="Add any special instructions or ingredients..." 
+                value={newMeal.notes}
+                onChange={(e) => setNewMeal({...newMeal, notes: e.target.value})}
+              />
             </div>
             <div className="flex gap-2">
-              <Button className="bg-green-600 hover:bg-green-700">Save Meal</Button>
+              <Button onClick={saveMeal} className="bg-green-600 hover:bg-green-700">Save Meal</Button>
               <Button variant="outline" onClick={() => setShowAddMeal(false)}>Cancel</Button>
             </div>
           </CardContent>
