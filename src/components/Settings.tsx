@@ -15,6 +15,11 @@ interface SettingsProps {
   onClose: () => void;
 }
 
+interface FormErrors {
+  familyName?: string;
+  timezone?: string;
+}
+
 const Settings = ({ currentRole, onClose }: SettingsProps) => {
   const [notifications, setNotifications] = useState({
     mealReminders: true,
@@ -28,6 +33,9 @@ const Settings = ({ currentRole, onClose }: SettingsProps) => {
     timezone: "America/New_York",
     currency: "USD"
   });
+
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [isLoading, setIsLoading] = useState(false);
 
   const { toast } = useToast();
 
@@ -43,15 +51,54 @@ const Settings = ({ currentRole, onClose }: SettingsProps) => {
     return rolePermissions[currentRole]?.includes(permission) || rolePermissions[currentRole]?.includes("all");
   };
 
-  const handleSaveSettings = () => {
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    if (!familySettings.familyName.trim()) {
+      newErrors.familyName = "Family name is required";
+    }
+
+    if (!familySettings.timezone.trim()) {
+      newErrors.timezone = "Timezone is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSaveSettings = async () => {
+    if (!validateForm()) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    setIsLoading(false);
     toast({
       title: "Settings Saved",
       description: "Your preferences have been updated successfully",
     });
   };
 
+  const handleInputChange = (field: keyof typeof familySettings, value: string) => {
+    setFamilySettings(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field as keyof FormErrors]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <SettingsIcon className="h-6 w-6 text-gray-600" />
@@ -62,104 +109,127 @@ const Settings = ({ currentRole, onClose }: SettingsProps) => {
         </Badge>
       </div>
 
-      {/* Profile Settings */}
-      {hasPermission("family") && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Profile Settings
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Profile Settings */}
+        {hasPermission("family") && (
+          <Card className="h-fit">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Profile Settings
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="familyName">Family Name</Label>
+                <Label htmlFor="familyName">
+                  Family Name <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="familyName"
                   value={familySettings.familyName}
-                  onChange={(e) => setFamilySettings(prev => ({ ...prev, familyName: e.target.value }))}
+                  onChange={(e) => handleInputChange('familyName', e.target.value)}
+                  className={errors.familyName ? "border-red-500" : ""}
+                  placeholder="Enter family name"
                 />
+                {errors.familyName && (
+                  <p className="text-sm text-red-500">{errors.familyName}</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="timezone">Timezone</Label>
+                <Label htmlFor="timezone">
+                  Timezone <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="timezone"
                   value={familySettings.timezone}
-                  onChange={(e) => setFamilySettings(prev => ({ ...prev, timezone: e.target.value }))}
+                  onChange={(e) => handleInputChange('timezone', e.target.value)}
+                  className={errors.timezone ? "border-red-500" : ""}
+                  placeholder="e.g., America/New_York"
+                />
+                {errors.timezone && (
+                  <p className="text-sm text-red-500">{errors.timezone}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="currency">Currency</Label>
+                <Input
+                  id="currency"
+                  value={familySettings.currency}
+                  onChange={(e) => handleInputChange('currency', e.target.value)}
+                  placeholder="e.g., USD"
                 />
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Notification Settings */}
+        <Card className="h-fit">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              Notifications
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {hasPermission("meals") && (
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label htmlFor="meal-reminders">Meal Reminders</Label>
+                  <p className="text-sm text-gray-500">Get notified about upcoming meals</p>
+                </div>
+                <Switch
+                  id="meal-reminders"
+                  checked={notifications.mealReminders}
+                  onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, mealReminders: checked }))}
+                />
+              </div>
+            )}
+            
+            {hasPermission("activities") && (
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label htmlFor="activity-alerts">Activity Alerts</Label>
+                  <p className="text-sm text-gray-500">Get notified about activities and schedule changes</p>
+                </div>
+                <Switch
+                  id="activity-alerts"
+                  checked={notifications.activityAlerts}
+                  onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, activityAlerts: checked }))}
+                />
+              </div>
+            )}
+
+            {hasPermission("shopping") && (
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label htmlFor="shopping-updates">Shopping Updates</Label>
+                  <p className="text-sm text-gray-500">Get notified about shopping list changes</p>
+                </div>
+                <Switch
+                  id="shopping-updates"
+                  checked={notifications.shoppingUpdates}
+                  onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, shoppingUpdates: checked }))}
+                />
+              </div>
+            )}
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label htmlFor="weekly-digest">Weekly Digest</Label>
+                <p className="text-sm text-gray-500">Receive a weekly summary email</p>
+              </div>
+              <Switch
+                id="weekly-digest"
+                checked={notifications.weeklyDigest}
+                onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, weeklyDigest: checked }))}
+              />
             </div>
           </CardContent>
         </Card>
-      )}
+      </div>
 
-      {/* Notification Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
-            Notifications
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {hasPermission("meals") && (
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="meal-reminders">Meal Reminders</Label>
-                <p className="text-sm text-gray-500">Get notified about upcoming meals</p>
-              </div>
-              <Switch
-                id="meal-reminders"
-                checked={notifications.mealReminders}
-                onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, mealReminders: checked }))}
-              />
-            </div>
-          )}
-          
-          {hasPermission("activities") && (
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="activity-alerts">Activity Alerts</Label>
-                <p className="text-sm text-gray-500">Get notified about activities and schedule changes</p>
-              </div>
-              <Switch
-                id="activity-alerts"
-                checked={notifications.activityAlerts}
-                onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, activityAlerts: checked }))}
-              />
-            </div>
-          )}
-
-          {hasPermission("shopping") && (
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="shopping-updates">Shopping Updates</Label>
-                <p className="text-sm text-gray-500">Get notified about shopping list changes</p>
-              </div>
-              <Switch
-                id="shopping-updates"
-                checked={notifications.shoppingUpdates}
-                onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, shoppingUpdates: checked }))}
-              />
-            </div>
-          )}
-
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="weekly-digest">Weekly Digest</Label>
-              <p className="text-sm text-gray-500">Receive a weekly summary email</p>
-            </div>
-            <Switch
-              id="weekly-digest"
-              checked={notifications.weeklyDigest}
-              onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, weeklyDigest: checked }))}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Role & Permissions */}
+      {/* Role & Permissions - Full Width */}
       {hasPermission("all") && (
         <Card>
           <CardHeader>
@@ -169,7 +239,7 @@ const Settings = ({ currentRole, onClose }: SettingsProps) => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <Label>Current Role</Label>
                 <p className="text-sm text-gray-500 mb-2">Your current access level in the family hub</p>
@@ -177,8 +247,6 @@ const Settings = ({ currentRole, onClose }: SettingsProps) => {
                   {currentRole.charAt(0).toUpperCase() + currentRole.slice(1)}
                 </Badge>
               </div>
-              
-              <Separator />
               
               <div>
                 <Label>Family Members</Label>
@@ -209,8 +277,12 @@ const Settings = ({ currentRole, onClose }: SettingsProps) => {
         <Button variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button onClick={handleSaveSettings} className="bg-blue-600 hover:bg-blue-700">
-          Save Settings
+        <Button 
+          onClick={handleSaveSettings} 
+          className="bg-blue-600 hover:bg-blue-700"
+          disabled={isLoading}
+        >
+          {isLoading ? "Saving..." : "Save Settings"}
         </Button>
       </div>
     </div>
