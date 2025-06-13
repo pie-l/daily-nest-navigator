@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Calendar, ChefHat, ShoppingCart, Users, Car, Settings as SettingsIcon, Plus, Clock, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,9 +10,11 @@ import Settings from "@/components/Settings";
 import LoginScreen from "@/components/LoginScreen";
 import UserProfile from "@/components/UserProfile";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSettings } from "@/contexts/SettingsContext";
 
 const Index = () => {
   const { isAuthenticated, user } = useAuth();
+  const { familySettings } = useSettings();
   const [activeView, setActiveView] = useState("dashboard");
 
   // If not authenticated, show login screen
@@ -46,7 +47,7 @@ const Index = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl">
             <Users className="h-6 w-6 text-blue-600" />
-            Johnson Family Dashboard
+            {familySettings.familyName} Dashboard
           </CardTitle>
         </CardHeader>
         <CardContent>

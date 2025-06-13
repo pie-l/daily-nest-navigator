@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useSettings } from "@/contexts/SettingsContext";
 
 interface SettingsProps {
   currentRole: string;
@@ -21,22 +22,11 @@ interface FormErrors {
 }
 
 const Settings = ({ currentRole, onClose }: SettingsProps) => {
-  const [notifications, setNotifications] = useState({
-    mealReminders: true,
-    activityAlerts: true,
-    shoppingUpdates: false,
-    weeklyDigest: true
-  });
-
-  const [familySettings, setFamilySettings] = useState({
-    familyName: "Johnson Family",
-    timezone: "America/New_York",
-    currency: "USD"
-  });
-
+  const { notifications, familySettings, updateNotifications, updateFamilySettings, saveSettings } = useSettings();
+  const [localNotifications, setLocalNotifications] = useState(notifications);
+  const [localFamilySettings, setLocalFamilySettings] = useState(familySettings);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
-
   const { toast } = useToast();
 
   const rolePermissions = {
@@ -54,11 +44,11 @@ const Settings = ({ currentRole, onClose }: SettingsProps) => {
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    if (!familySettings.familyName.trim()) {
+    if (!localFamilySettings.familyName.trim()) {
       newErrors.familyName = "Family name is required";
     }
 
-    if (!familySettings.timezone.trim()) {
+    if (!localFamilySettings.timezone.trim()) {
       newErrors.timezone = "Timezone is required";
     }
 
@@ -78,22 +68,39 @@ const Settings = ({ currentRole, onClose }: SettingsProps) => {
 
     setIsLoading(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setIsLoading(false);
-    toast({
-      title: "Settings Saved",
-      description: "Your preferences have been updated successfully",
-    });
+    try {
+      // Update the global state
+      updateNotifications(localNotifications);
+      updateFamilySettings(localFamilySettings);
+      
+      // Save to localStorage
+      await saveSettings();
+      
+      toast({
+        title: "Settings Saved",
+        description: "Your preferences have been updated successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save settings. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleInputChange = (field: keyof typeof familySettings, value: string) => {
-    setFamilySettings(prev => ({ ...prev, [field]: value }));
+  const handleInputChange = (field: keyof typeof localFamilySettings, value: string) => {
+    setLocalFamilySettings(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field as keyof FormErrors]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
+  };
+
+  const handleNotificationChange = (field: keyof typeof localNotifications, value: boolean) => {
+    setLocalNotifications(prev => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -126,7 +133,7 @@ const Settings = ({ currentRole, onClose }: SettingsProps) => {
                 </Label>
                 <Input
                   id="familyName"
-                  value={familySettings.familyName}
+                  value={localFamilySettings.familyName}
                   onChange={(e) => handleInputChange('familyName', e.target.value)}
                   className={errors.familyName ? "border-red-500" : ""}
                   placeholder="Enter family name"
@@ -141,7 +148,7 @@ const Settings = ({ currentRole, onClose }: SettingsProps) => {
                 </Label>
                 <Input
                   id="timezone"
-                  value={familySettings.timezone}
+                  value={localFamilySettings.timezone}
                   onChange={(e) => handleInputChange('timezone', e.target.value)}
                   className={errors.timezone ? "border-red-500" : ""}
                   placeholder="e.g., America/New_York"
@@ -154,7 +161,7 @@ const Settings = ({ currentRole, onClose }: SettingsProps) => {
                 <Label htmlFor="currency">Currency</Label>
                 <Input
                   id="currency"
-                  value={familySettings.currency}
+                  value={localFamilySettings.currency}
                   onChange={(e) => handleInputChange('currency', e.target.value)}
                   placeholder="e.g., USD"
                 />
@@ -180,8 +187,8 @@ const Settings = ({ currentRole, onClose }: SettingsProps) => {
                 </div>
                 <Switch
                   id="meal-reminders"
-                  checked={notifications.mealReminders}
-                  onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, mealReminders: checked }))}
+                  checked={localNotifications.mealReminders}
+                  onCheckedChange={(checked) => handleNotificationChange('mealReminders', checked)}
                 />
               </div>
             )}
@@ -194,8 +201,8 @@ const Settings = ({ currentRole, onClose }: SettingsProps) => {
                 </div>
                 <Switch
                   id="activity-alerts"
-                  checked={notifications.activityAlerts}
-                  onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, activityAlerts: checked }))}
+                  checked={localNotifications.activityAlerts}
+                  onCheckedChange={(checked) => handleNotificationChange('activityAlerts', checked)}
                 />
               </div>
             )}
@@ -208,8 +215,8 @@ const Settings = ({ currentRole, onClose }: SettingsProps) => {
                 </div>
                 <Switch
                   id="shopping-updates"
-                  checked={notifications.shoppingUpdates}
-                  onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, shoppingUpdates: checked }))}
+                  checked={localNotifications.shoppingUpdates}
+                  onCheckedChange={(checked) => handleNotificationChange('shoppingUpdates', checked)}
                 />
               </div>
             )}
@@ -221,8 +228,8 @@ const Settings = ({ currentRole, onClose }: SettingsProps) => {
               </div>
               <Switch
                 id="weekly-digest"
-                checked={notifications.weeklyDigest}
-                onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, weeklyDigest: checked }))}
+                checked={localNotifications.weeklyDigest}
+                onCheckedChange={(checked) => handleNotificationChange('weeklyDigest', checked)}
               />
             </div>
           </CardContent>
