@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Calendar, ChefHat, ShoppingCart, Users, Car, Settings as SettingsIcon, Plus, Clock, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import MealPlanner from "@/components/MealPlanner";
 import ShoppingList from "@/components/ShoppingList";
 import ActivityCalendar from "@/components/ActivityCalendar";
-import RoleSelector from "@/components/RoleSelector";
 import Settings from "@/components/Settings";
 import LoginScreen from "@/components/LoginScreen";
 import UserProfile from "@/components/UserProfile";
@@ -14,16 +14,12 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
   const { isAuthenticated, user } = useAuth();
-  const [currentRole, setCurrentRole] = useState("parent");
   const [activeView, setActiveView] = useState("dashboard");
 
   // If not authenticated, show login screen
   if (!isAuthenticated) {
     return <LoginScreen />;
   }
-
-  // Update current role when user changes (in case they login with different role)
-  const effectiveRole = user?.role || currentRole;
 
   const familyMembers = [
     { name: "Sarah", role: "Parent", avatar: "👩‍💼" },
@@ -51,9 +47,6 @@ const Index = () => {
           <CardTitle className="flex items-center gap-2 text-xl">
             <Users className="h-6 w-6 text-blue-600" />
             Johnson Family Dashboard
-            <Badge variant="outline" className="ml-auto">
-              {effectiveRole.charAt(0).toUpperCase() + effectiveRole.slice(1)} View
-            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -197,29 +190,14 @@ const Index = () => {
     </div>
   );
 
-  // Role-based navigation filtering
-  const getAvailableNavItems = () => {
-    const allItems = [
-      { id: "dashboard", label: "Dashboard", icon: Users },
-      { id: "meals", label: "Meal Planning", icon: ChefHat },
-      { id: "shopping", label: "Shopping", icon: ShoppingCart },
-      { id: "calendar", label: "Calendar", icon: Calendar },
-      { id: "settings", label: "Settings", icon: SettingsIcon },
-    ];
-
-    // Filter based on role permissions
-    if (effectiveRole === "child") {
-      return allItems.filter(item => ["dashboard", "calendar"].includes(item.id));
-    }
-    if (effectiveRole === "cook") {
-      return allItems.filter(item => ["dashboard", "meals", "shopping", "settings"].includes(item.id));
-    }
-    if (effectiveRole === "driver") {
-      return allItems.filter(item => ["dashboard", "calendar", "settings"].includes(item.id));
-    }
-    
-    return allItems; // admin and parent get all
-  };
+  // Simplified navigation - all items available for all users
+  const navItems = [
+    { id: "dashboard", label: "Dashboard", icon: Users },
+    { id: "meals", label: "Meal Planning", icon: ChefHat },
+    { id: "shopping", label: "Shopping", icon: ShoppingCart },
+    { id: "calendar", label: "Calendar", icon: Calendar },
+    { id: "settings", label: "Settings", icon: SettingsIcon },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -232,7 +210,6 @@ const Index = () => {
               <h1 className="text-xl font-bold text-gray-900">Family Hub</h1>
             </div>
             <div className="flex items-center gap-4">
-              <RoleSelector currentRole={effectiveRole} onRoleChange={setCurrentRole} />
               <UserProfile onSettingsClick={() => setActiveView("settings")} />
             </div>
           </div>
@@ -243,7 +220,7 @@ const Index = () => {
       <nav className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-8 overflow-x-auto py-3">
-            {getAvailableNavItems().map((item) => (
+            {navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setActiveView(item.id)}
@@ -267,7 +244,7 @@ const Index = () => {
         {activeView === "meals" && <MealPlanner />}
         {activeView === "shopping" && <ShoppingList />}
         {activeView === "calendar" && <ActivityCalendar />}
-        {activeView === "settings" && <Settings currentRole={effectiveRole} onClose={() => setActiveView("dashboard")} />}
+        {activeView === "settings" && <Settings currentRole={user?.role || "parent"} onClose={() => setActiveView("dashboard")} />}
       </main>
     </div>
   );
