@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import MealPlanner from "@/components/MealPlanner";
 import ShoppingList from "@/components/ShoppingList";
 import ActivityCalendar from "@/components/ActivityCalendar";
+import TransportDashboard from "@/components/TransportDashboard";
 import Settings from "@/components/Settings";
 import LoginScreen from "@/components/LoginScreen";
 import UserProfile from "@/components/UserProfile";
@@ -180,6 +181,30 @@ const Index = () => {
         </CardContent>
       </Card>
       {renderMealsCard()}
+      <Card className="shadow-lg border-0">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShoppingCart className="h-5 w-5 text-blue-600" />
+            Shopping List
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+              <span className="text-sm">Fresh tomatoes</span>
+              <Badge variant="outline">Needed</Badge>
+            </div>
+            <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+              <span className="text-sm">Ground beef</span>
+              <Badge variant="outline">Needed</Badge>
+            </div>
+            <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+              <span className="text-sm">Pasta</span>
+              <Badge variant="outline">In stock</Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 
@@ -210,6 +235,32 @@ const Index = () => {
         </CardContent>
       </Card>
       {renderActivitiesCard()}
+      <Card className="shadow-lg border-0">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Car className="h-5 w-5 text-green-600" />
+            Today's Routes
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div>
+                <div className="font-medium text-sm">School Drop-off</div>
+                <div className="text-sm text-gray-600">8:00 AM - Emma</div>
+              </div>
+              <Badge variant="outline">Scheduled</Badge>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div>
+                <div className="font-medium text-sm">Soccer Practice</div>
+                <div className="text-sm text-gray-600">4:00 PM - Emma</div>
+              </div>
+              <Badge variant="outline">Scheduled</Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 
@@ -369,6 +420,7 @@ const Index = () => {
         {activeView === "meals" && (user?.role === "admin" || user?.role === "parent" || user?.role === "cook") && <MealPlanner />}
         {activeView === "shopping" && (user?.role === "admin" || user?.role === "parent" || user?.role === "cook") && <ShoppingList />}
         {activeView === "calendar" && (user?.role === "admin" || user?.role === "parent" || user?.role === "driver") && <ActivityCalendar />}
+        {activeView === "transport" && (user?.role === "admin" || user?.role === "parent" || user?.role === "driver") && <TransportDashboard />}
         {activeView === "activities" && user?.role === "child" && <ActivityCalendar />}
         {activeView === "settings" && (user?.role === "admin" || user?.role === "parent") && <Settings currentRole={user?.role || "parent"} onClose={() => setActiveView("dashboard")} />}
       </main>
