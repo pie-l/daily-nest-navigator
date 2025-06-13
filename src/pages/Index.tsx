@@ -1,5 +1,6 @@
+
 import { useState } from "react";
-import { Calendar, ChefHat, ShoppingCart, Users, Car, Settings as SettingsIcon, Plus, Clock, CheckCircle } from "lucide-react";
+import { Calendar, ChefHat, ShoppingCart, Users, Car, Settings as SettingsIcon, Plus, Clock, CheckCircle, Shield, BookOpen } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,9 +41,77 @@ const Index = () => {
     { meal: "Dinner", dish: "Spaghetti Bolognese", status: "planned" }
   ];
 
-  const renderDashboard = () => (
+  // Role-based navigation configuration
+  const getRoleBasedNavigation = (role: string) => {
+    const baseItems = [
+      { id: "dashboard", label: "Dashboard", icon: Users, roles: ["admin", "parent", "cook", "driver", "child"] },
+    ];
+
+    const roleSpecificItems = [
+      { id: "meals", label: "Meal Planning", icon: ChefHat, roles: ["admin", "parent", "cook"] },
+      { id: "shopping", label: "Shopping", icon: ShoppingCart, roles: ["admin", "parent", "cook"] },
+      { id: "calendar", label: "Calendar", icon: Calendar, roles: ["admin", "parent", "driver"] },
+      { id: "transport", label: "Transport", icon: Car, roles: ["admin", "parent", "driver"] },
+      { id: "activities", label: "My Activities", icon: BookOpen, roles: ["child"] },
+      { id: "settings", label: "Settings", icon: SettingsIcon, roles: ["admin", "parent"] },
+    ];
+
+    return [...baseItems, ...roleSpecificItems].filter(item => item.roles.includes(role));
+  };
+
+  const renderRoleBasedDashboard = () => {
+    switch (user?.role) {
+      case "admin":
+        return renderAdminDashboard();
+      case "parent":
+        return renderParentDashboard();
+      case "cook":
+        return renderCookDashboard();
+      case "driver":
+        return renderDriverDashboard();
+      case "child":
+        return renderChildDashboard();
+      default:
+        return renderParentDashboard();
+    }
+  };
+
+  const renderAdminDashboard = () => (
     <div className="space-y-6">
-      {/* Family Overview */}
+      <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-0 shadow-lg">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <Shield className="h-6 w-6 text-purple-600" />
+            Administrator Dashboard
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+              <div className="text-2xl font-bold text-purple-600">3</div>
+              <div className="text-sm text-gray-600">Active Users</div>
+            </div>
+            <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+              <div className="text-2xl font-bold text-green-600">7</div>
+              <div className="text-sm text-gray-600">Meals Planned</div>
+            </div>
+            <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+              <div className="text-2xl font-bold text-blue-600">12</div>
+              <div className="text-sm text-gray-600">Shopping Items</div>
+            </div>
+            <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+              <div className="text-2xl font-bold text-orange-600">5</div>
+              <div className="text-sm text-gray-600">Activities</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      {renderCommonDashboardCards()}
+    </div>
+  );
+
+  const renderParentDashboard = () => (
+    <div className="space-y-6">
       <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-0 shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl">
@@ -80,125 +149,180 @@ const Index = () => {
           </div>
         </CardContent>
       </Card>
-
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Today's Meals */}
-        <Card className="shadow-lg border-0">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <ChefHat className="h-5 w-5 text-orange-600" />
-              Today's Meals
-            </CardTitle>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setActiveView("meals")}
-              className="hover:bg-orange-50"
-            >
-              View All
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {todaysMeals.map((meal, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <div>
-                  <div className="font-medium text-sm">{meal.meal}</div>
-                  <div className="text-sm text-gray-600">{meal.dish}</div>
-                </div>
-                {meal.status === "completed" ? (
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                ) : (
-                  <Clock className="h-5 w-5 text-orange-500" />
-                )}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Upcoming Activities */}
-        <Card className="shadow-lg border-0">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-blue-600" />
-              Upcoming Activities
-            </CardTitle>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setActiveView("calendar")}
-              className="hover:bg-blue-50"
-            >
-              View Calendar
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {upcomingActivities.map((activity, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <div>
-                  <div className="font-medium text-sm">{activity.title}</div>
-                  <div className="text-sm text-gray-600">{activity.date} at {activity.time}</div>
-                </div>
-                <Badge variant="outline" className="text-xs">
-                  {activity.type}
-                </Badge>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <Card className="shadow-lg border-0">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5 text-green-600" />
-            Quick Actions
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button 
-              onClick={() => setActiveView("meals")}
-              className="h-20 flex flex-col gap-2 bg-orange-500 hover:bg-orange-600"
-            >
-              <ChefHat className="h-6 w-6" />
-              Plan Meals
-            </Button>
-            <Button 
-              onClick={() => setActiveView("shopping")}
-              className="h-20 flex flex-col gap-2 bg-green-500 hover:bg-green-600"
-            >
-              <ShoppingCart className="h-6 w-6" />
-              Shopping List
-            </Button>
-            <Button 
-              onClick={() => setActiveView("calendar")}
-              className="h-20 flex flex-col gap-2 bg-blue-500 hover:bg-blue-600"
-            >
-              <Calendar className="h-6 w-6" />
-              Add Activity
-            </Button>
-            <Button 
-              variant="outline"
-              className="h-20 flex flex-col gap-2 hover:bg-gray-50"
-            >
-              <Car className="h-6 w-6" />
-              Transport
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {renderCommonDashboardCards()}
     </div>
   );
 
-  // Simplified navigation - all items available for all users
-  const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: Users },
-    { id: "meals", label: "Meal Planning", icon: ChefHat },
-    { id: "shopping", label: "Shopping", icon: ShoppingCart },
-    { id: "calendar", label: "Calendar", icon: Calendar },
-    { id: "settings", label: "Settings", icon: SettingsIcon },
-  ];
+  const renderCookDashboard = () => (
+    <div className="space-y-6">
+      <Card className="bg-gradient-to-r from-orange-50 to-yellow-50 border-0 shadow-lg">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <ChefHat className="h-6 w-6 text-orange-600" />
+            Kitchen Dashboard
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+              <div className="text-2xl font-bold text-orange-600">7</div>
+              <div className="text-sm text-gray-600">Meals to Prepare</div>
+            </div>
+            <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+              <div className="text-2xl font-bold text-green-600">12</div>
+              <div className="text-sm text-gray-600">Shopping Items</div>
+            </div>
+            <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+              <div className="text-2xl font-bold text-blue-600">3</div>
+              <div className="text-sm text-gray-600">Recipes Ready</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      {renderMealsCard()}
+    </div>
+  );
+
+  const renderDriverDashboard = () => (
+    <div className="space-y-6">
+      <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-0 shadow-lg">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <Car className="h-6 w-6 text-green-600" />
+            Transport Dashboard
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+              <div className="text-2xl font-bold text-green-600">5</div>
+              <div className="text-sm text-gray-600">Upcoming Trips</div>
+            </div>
+            <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+              <div className="text-2xl font-bold text-blue-600">2</div>
+              <div className="text-sm text-gray-600">Today's Routes</div>
+            </div>
+            <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+              <div className="text-2xl font-bold text-orange-600">450</div>
+              <div className="text-sm text-gray-600">Miles This Week</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      {renderActivitiesCard()}
+    </div>
+  );
+
+  const renderChildDashboard = () => (
+    <div className="space-y-6">
+      <Card className="bg-gradient-to-r from-pink-50 to-purple-50 border-0 shadow-lg">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <BookOpen className="h-6 w-6 text-pink-600" />
+            My Activities
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+              <div className="text-2xl font-bold text-pink-600">3</div>
+              <div className="text-sm text-gray-600">Today's Activities</div>
+            </div>
+            <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+              <div className="text-2xl font-bold text-purple-600">2</div>
+              <div className="text-sm text-gray-600">Homework Tasks</div>
+            </div>
+            <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+              <div className="text-2xl font-bold text-blue-600">5</div>
+              <div className="text-sm text-gray-600">Fun Activities</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      {renderMealsCard()}
+      {renderActivitiesCard()}
+    </div>
+  );
+
+  const renderMealsCard = () => (
+    <Card className="shadow-lg border-0">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="flex items-center gap-2">
+          <ChefHat className="h-5 w-5 text-orange-600" />
+          Today's Meals
+        </CardTitle>
+        {(user?.role === "admin" || user?.role === "parent" || user?.role === "cook") && (
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setActiveView("meals")}
+            className="hover:bg-orange-50"
+          >
+            View All
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {todaysMeals.map((meal, index) => (
+          <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+            <div>
+              <div className="font-medium text-sm">{meal.meal}</div>
+              <div className="text-sm text-gray-600">{meal.dish}</div>
+            </div>
+            {meal.status === "completed" ? (
+              <CheckCircle className="h-5 w-5 text-green-500" />
+            ) : (
+              <Clock className="h-5 w-5 text-orange-500" />
+            )}
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+
+  const renderActivitiesCard = () => (
+    <Card className="shadow-lg border-0">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="flex items-center gap-2">
+          <Calendar className="h-5 w-5 text-blue-600" />
+          Upcoming Activities
+        </CardTitle>
+        {(user?.role === "admin" || user?.role === "parent" || user?.role === "driver") && (
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setActiveView("calendar")}
+            className="hover:bg-blue-50"
+          >
+            View Calendar
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {upcomingActivities.map((activity, index) => (
+          <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+            <div>
+              <div className="font-medium text-sm">{activity.title}</div>
+              <div className="text-sm text-gray-600">{activity.date} at {activity.time}</div>
+            </div>
+            <Badge variant="outline" className="text-xs">
+              {activity.type}
+            </Badge>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+
+  const renderCommonDashboardCards = () => (
+    <div className="grid md:grid-cols-2 gap-6">
+      {renderMealsCard()}
+      {renderActivitiesCard()}
+    </div>
+  );
+
+  // Get navigation items based on current user role
+  const navItems = getRoleBasedNavigation(user?.role || "parent");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -241,11 +365,12 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeView === "dashboard" && renderDashboard()}
-        {activeView === "meals" && <MealPlanner />}
-        {activeView === "shopping" && <ShoppingList />}
-        {activeView === "calendar" && <ActivityCalendar />}
-        {activeView === "settings" && <Settings currentRole={user?.role || "parent"} onClose={() => setActiveView("dashboard")} />}
+        {activeView === "dashboard" && renderRoleBasedDashboard()}
+        {activeView === "meals" && (user?.role === "admin" || user?.role === "parent" || user?.role === "cook") && <MealPlanner />}
+        {activeView === "shopping" && (user?.role === "admin" || user?.role === "parent" || user?.role === "cook") && <ShoppingList />}
+        {activeView === "calendar" && (user?.role === "admin" || user?.role === "parent" || user?.role === "driver") && <ActivityCalendar />}
+        {activeView === "activities" && user?.role === "child" && <ActivityCalendar />}
+        {activeView === "settings" && (user?.role === "admin" || user?.role === "parent") && <Settings currentRole={user?.role || "parent"} onClose={() => setActiveView("dashboard")} />}
       </main>
     </div>
   );
